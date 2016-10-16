@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rake", "Rake\Rake.csproj", "{F5F503D5-68F5-4DE9-BCC8-F78A248894E9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rake.Console", "Rake.Console\Rake.Console.csproj", "{F5F503D5-68F5-4DE9-BCC8-F78A248894E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rake", "Rake\Rake.csproj", "{106F1B62-3998-4B12-953D-166C97A3DE44}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{F5F503D5-68F5-4DE9-BCC8-F78A248894E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F5F503D5-68F5-4DE9-BCC8-F78A248894E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F5F503D5-68F5-4DE9-BCC8-F78A248894E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{106F1B62-3998-4B12-953D-166C97A3DE44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{106F1B62-3998-4B12-953D-166C97A3DE44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{106F1B62-3998-4B12-953D-166C97A3DE44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{106F1B62-3998-4B12-953D-166C97A3DE44}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
