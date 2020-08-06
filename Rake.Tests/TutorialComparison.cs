@@ -1,20 +1,19 @@
 ﻿using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+using Xunit;
 
 namespace Rake.Tests
 {
-    [TestClass]
     public class TutorialComparison
     {
-
-        [TestMethod]
+        [Fact]
         public void More_Compex_Comparison_From_Tutorial()
         {
             
             var rake = new Rake(minCharLength: 5, maxWordsLength: 3, minKeywordFrequency: 4);
             var result = rake.Run(text);
 
-            Assert.IsNotNull(result);
+            Assert.NotNull(result);
 
             //expected was
             /*
@@ -27,16 +26,16 @@ namespace Rake.Tests
              * 
              * */
 
-            Assert.AreEqual("household food security", result.Skip(0).First().Key);
-            Assert.AreEqual("indigenous groups living", result.Skip(1).First().Key);
-            Assert.AreEqual("national forest programmes", result.Skip(2).First().Key);
-            Assert.AreEqual("wood forest products", result.Skip(3).First().Key);
+            Assert.Equal("household food security", result.Skip(0).First().Key);
+            Assert.Equal("indigenous groups living", result.Skip(1).First().Key);
+            Assert.Equal("national forest programmes", result.Skip(2).First().Key);
+            Assert.Equal("wood forest products", result.Skip(3).First().Key);
 
             // and scores, but i don't expect the precision to be the same, maybe 2dp?
-            Assert.AreEqual(7.711414565826329, result.Skip(0).First().Value, 0.01);
-            Assert.AreEqual(7.4, result.Skip(1).First().Value, 0.01);
-            Assert.AreEqual(7.249539170506913, result.Skip(2).First().Value, 0.01);
-            Assert.AreEqual(6.844777265745007, result.Skip(3).First().Value, 0.01);
+            Assert.Equal(7.711414565826329, result.Skip(0).First().Value, 2);
+            Assert.Equal(7.4, result.Skip(1).First().Value, 1);
+            Assert.Equal(7.249539170506913, result.Skip(2).First().Value, 2);
+            Assert.Equal(6.844777265745007, result.Skip(3).First().Value, 2);
 
         }
 

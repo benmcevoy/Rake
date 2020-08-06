@@ -13,7 +13,7 @@ namespace Rake
         private readonly int _maxWordsLength;
         private readonly double _minKeywordFrequency;
 
-        public Rake(string stopWordsPath = null, int minCharLength = 1, int maxWordsLength = 5, double minKeywordFrequency = 1)
+        public Rake(string? stopWordsPath = null, int minCharLength = 1, int maxWordsLength = 5, double minKeywordFrequency = 1)
         {
             _minCharLength = minCharLength;
             _maxWordsLength = maxWordsLength;
@@ -37,7 +37,7 @@ namespace Rake
                 .ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
-        private static string BuildStopWordRegEx(string stopWordsPath)
+        private static string BuildStopWordRegEx(string? stopWordsPath)
         {
             var stopWordList = LoadStopWords(stopWordsPath);
             var stopWordRegexList = new List<string>();
@@ -53,7 +53,7 @@ namespace Rake
             return $"({stopWordPattern})";
         }
 
-        private static IList<string> LoadStopWords(string stopWordsPath)
+        private static IList<string> LoadStopWords(string? stopWordsPath)
         {
             var stopWords = new List<string>();
 
@@ -74,14 +74,13 @@ namespace Rake
             var assembly = Assembly.GetExecutingAssembly();
             var resourceName = "Rake.SmartStoplist.txt";
 
-            using (var stream = assembly.GetManifestResourceStream(resourceName))
-            using (var reader = new StreamReader(stream))
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            using var reader = new StreamReader(stream);
+
+            string? line;
+            while ((line = reader.ReadLine()) != null)
             {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    yield return line;
-                }
+                yield return line;
             }
         }
 
@@ -152,6 +151,9 @@ namespace Rake
             return wordScore;
         }
 
+        private static readonly Regex splitter = new Regex(@"[^a-zA-Z0-9_\+\-/]", RegexOptions.Compiled);
+
+
         /// <summary>
         ///  Utility function to return a list of all words that are have a length greater than a specified number of characters.
         /// </summary>
@@ -160,7 +162,6 @@ namespace Rake
         /// <returns></returns>
         private IList<string> SeparateWords(string phrase, int minWordReturnSize)
         {
-            var splitter = new Regex(@"[^a-zA-Z0-9_\+\-/]", RegexOptions.Compiled);
             var words = new List<string>();
 
             foreach (var singleWord in splitter.Split(phrase))
@@ -180,8 +181,7 @@ namespace Rake
 
         private static bool IsNumber(string word)
         {
-            float tmp;
-            return float.TryParse(word, out tmp);
+            return float.TryParse(word, out _);
         }
 
         private static IList<string> GenerateCandidateKeywords(IEnumerable<string> sentenceList, string stopWordsPattern,
@@ -232,14 +232,15 @@ namespace Rake
             return true;
         }
 
+        private static readonly Regex sentenceDelimiters = new Regex(@"[\[\]\n.!?,;:\t\-\""”“\(\)\\\'\u2019\u2013]", RegexOptions.Compiled);
+
         /// <summary>
         /// Utility function to return a list of sentences.
         /// </summary>
         /// <param name="text">The text that must be split in to sentences</param>
         /// <returns></returns>
-        private static IList<string> SplitSentences(string text)
+        private static string[] SplitSentences(string text)
         {
-            var sentenceDelimiters = new Regex(@"[\[\]\n.!?,;:\t\-\""\(\)\\\'\u2019\u2013]", RegexOptions.Compiled);
             var sentences = sentenceDelimiters.Split(text);
 
             return sentences;

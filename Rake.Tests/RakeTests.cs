@@ -1,12 +1,12 @@
 ﻿using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+using Xunit;
 
 namespace Rake.Tests
 {
-    [TestClass]
     public class RakeTests
     {
-        [TestMethod]
+        [Fact]
         public void Rake_Sort_Of_Works()
         {
             const string text = @"Compatibility of systems of linear constraints over the set of natural numbers. 
@@ -18,7 +18,7 @@ These criteria and the corresponding algorithms for constructing a minimal suppo
 
             var result = rake.Run(text);
 
-            Assert.IsNotNull(result);
+            Assert.NotNull(result);
 
             // from https://www.airpair.com/nlp/keyword-extraction-tutorial
 
@@ -34,11 +34,11 @@ These criteria and the corresponding algorithms for constructing a minimal suppo
             Keyword:  nonstrict inequations , score:  4.0
             */
 
-            Assert.AreEqual("minimal generating sets", result.Skip(0).First().Key);
-            Assert.AreEqual("linear diophantine equations", result.Skip(1).First().Key);
-            Assert.AreEqual("minimal supporting set", result.Skip(2).First().Key);
-            Assert.AreEqual("minimal set", result.Skip(3).First().Key);
-            Assert.AreEqual("linear constraints", result.Skip(4).First().Key);
+            Assert.Equal("minimal generating sets", result.Skip(0).First().Key);
+            Assert.Equal("linear diophantine equations", result.Skip(1).First().Key);
+            Assert.Equal("minimal supporting set", result.Skip(2).First().Key);
+            Assert.Equal("minimal set", result.Skip(3).First().Key);
+            Assert.Equal("linear constraints", result.Skip(4).First().Key);
             
             // we then hit a few that are scored the same and the order is slightly different
             //Assert.AreEqual("upper bounds", result.Skip(5).First().Key);
@@ -46,10 +46,10 @@ These criteria and the corresponding algorithms for constructing a minimal suppo
             //Assert.AreEqual("nonstrict inequations", result.Skip(7).First().Key);
 
             // but the score is OK so we are green
-            Assert.AreEqual(4.0, result["upper bounds"]);
+            Assert.Equal(4.0, result["upper bounds"]);
         }
 
-        [TestMethod]
+        [Fact]
                     public void Just_Looking_At_Some_Results()
                     {
                         var text =
@@ -91,11 +91,11 @@ These criteria and the corresponding algorithms for constructing a minimal suppo
 
                         var result = rake.Run(text);
 
-                        Assert.IsNotNull(result);
+                        Assert.NotNull(result);
 
-                        var result2 = rake.Run(string.Join("|", result.Select(pair => pair.Key)));
+                        var result2 = rake.Run(string.Join('|', result.Select(pair => pair.Key)));
 
-                        Assert.IsNotNull(result2);
+                        Assert.NotNull(result2);
                     }
                 }
             }
