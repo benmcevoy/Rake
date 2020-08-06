@@ -1,32 +1,49 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Rake
 {
     public class Rake
     {
-        private readonly string _stopWordsPattern;
         private readonly int _minCharLength;
         private readonly int _maxWordsLength;
         private readonly double _minKeywordFrequency;
+        private readonly HashSet<string> _stopWords;
 
-        public Rake(string? stopWordsPath = null, int minCharLength = 1, int maxWordsLength = 5, double minKeywordFrequency = 1)
+        public Rake(
+            string? stopWordsPath = null,
+            int minCharLength = 1,
+            int maxWordsLength = 5, 
+            double minKeywordFrequency = 1)
         {
             _minCharLength = minCharLength;
             _maxWordsLength = maxWordsLength;
             _minKeywordFrequency = minKeywordFrequency;
-            _stopWordsPattern = BuildStopWordRegEx(stopWordsPath);
+            _stopWords = StopListHelper.ParseFromPath(stopWordsPath);
+        }
+
+        public Rake(
+            HashSet<string> stopWords,
+            int minCharLength = 1,
+            int maxWordsLength = 5,
+            double minKeywordFrequency = 1)
+        {
+            _minCharLength = minCharLength;
+            _maxWordsLength = maxWordsLength;
+            _minKeywordFrequency = minKeywordFrequency;
+            _stopWords = stopWords ?? new HashSet<string>();
         }
 
         public Dictionary<string, double> Run(string text)
         {
-            var sentenceList = SplitSentences(text);
+            string[] sentenceList = SplitSentences(text.ToLowerInvariant());
 
-            var phraseList = GenerateCandidateKeywords(sentenceList, _stopWordsPattern,
-                _minCharLength, _maxWordsLength);
+            var phraseList = GenerateCandidateKeywords(sentenceList, _minCharLength, _maxWordsLength);
 
             var wordScores = CalculateWordScores(phraseList);
 
@@ -37,54 +54,9 @@ namespace Rake
                 .ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
-        private static string BuildStopWordRegEx(string? stopWordsPath)
-        {
-            var stopWordList = LoadStopWords(stopWordsPath);
-            var stopWordRegexList = new List<string>();
-
-            foreach (var word in stopWordList)
-            {
-                var wordRegex = $@"\b{word}\b";
-                stopWordRegexList.Add(wordRegex);
-            }
-
-            var stopWordPattern = string.Join("|", stopWordRegexList).ToLowerInvariant();
-
-            return $"({stopWordPattern})";
-        }
-
-        private static IList<string> LoadStopWords(string? stopWordsPath)
-        {
-            var stopWords = new List<string>();
-
-            foreach (var line in string.IsNullOrWhiteSpace(stopWordsPath) 
-                ? ReadAllLines() 
-                : File.ReadAllLines(stopWordsPath))
-            {
-                if (line.Trim().StartsWith("#")) continue;
-
-                stopWords.AddRange(line.Split(' '));
-            }
-
-            return stopWords;
-        }
-
-        private static IEnumerable<string> ReadAllLines()
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = "Rake.SmartStoplist.txt";
-
-            using var stream = assembly.GetManifestResourceStream(resourceName);
-            using var reader = new StreamReader(stream);
-
-            string? line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                yield return line;
-            }
-        }
-
-        private Dictionary<string, double> GenerateCandidateKeywordScores(IList<string> phraseList, Dictionary<string, double> wordScores,
+        private Dictionary<string, double> GenerateCandidateKeywordScores(
+            List<string> phraseList, 
+            Dictionary<string, double> wordScores,
             double minKeywordFrequency)
         {
             var keywordCandidates = new Dictionary<string, double>();
@@ -108,12 +80,12 @@ namespace Rake
             return keywordCandidates;
         }
 
-        private Dictionary<string, double> CalculateWordScores(IEnumerable<string> phraseList)
+        private Dictionary<string, double> CalculateWordScores(IEnumerable<string> lowerCasedPhraseList)
         {
             var wordFrequency = new Dictionary<string, double>();
             var wordDegree = new Dictionary<string, double>();
 
-            foreach (var phrase in phraseList)
+            foreach (var phrase in lowerCasedPhraseList)
             {
                 var words = SeparateWords(phrase, 0);
                 var wordsLength = words.Count;
@@ -153,20 +125,19 @@ namespace Rake
 
         private static readonly Regex splitter = new Regex(@"[^a-zA-Z0-9_\+\-/]", RegexOptions.Compiled);
 
-
         /// <summary>
-        ///  Utility function to return a list of all words that are have a length greater than a specified number of characters.
+        /// Utility function to return a list of all words that are have a length greater than a specified number of characters.
         /// </summary>
         /// <param name="phrase">The text that must be split in to words.</param>
         /// <param name="minWordReturnSize">The minimum no of characters a word must have to be included.</param>
         /// <returns></returns>
-        private IList<string> SeparateWords(string phrase, int minWordReturnSize)
+        private List<string> SeparateWords(string phrase, int minWordReturnSize)
         {
             var words = new List<string>();
 
             foreach (var singleWord in splitter.Split(phrase))
             {
-                var currentWord = singleWord.Trim().ToLowerInvariant();
+                var currentWord = singleWord.Trim();
                 // leave numbers in phrase, but don't count as words, since they tend to invalidate scores of their phrases
 
                 if (!string.IsNullOrWhiteSpace(currentWord) && currentWord.Length > minWordReturnSize &&
@@ -179,28 +150,54 @@ namespace Rake
             return words;
         }
 
-        private static bool IsNumber(string word)
-        {
-            return float.TryParse(word, out _);
-        }
+        private static bool IsNumber(string word) => float.TryParse(word, out _);
 
-        private static IList<string> GenerateCandidateKeywords(IEnumerable<string> sentenceList, string stopWordsPattern,
-            int minCharLength, int maxWordsLength)
+        private List<string> GenerateCandidateKeywords(
+            string[] sentenceList,
+            int minCharLength, 
+            int maxWordsLength)
         {
             var phraseList = new List<string>();
 
-            foreach (var s in sentenceList)
+            var sb = new StringBuilder();
+
+            foreach (string sentence in sentenceList)
             {
-                var tmp = Regex.Replace(s.Trim().ToLowerInvariant(), stopWordsPattern, "|");
-                var phrases = tmp.Split('|');
+                string sLowerCase = sentence.Trim();
 
-                foreach (var phrase in phrases)
+                var wordSplitter = new StringSplitter(sLowerCase.AsSpan(), ' ');
+
+                while (wordSplitter.TryGetNext(out var wordSpan))
                 {
-                    var p = phrase.Trim();
+                    string word = wordSpan.ToString();
 
-                    if (!string.IsNullOrWhiteSpace(p) && IsAcceptable(p, minCharLength, maxWordsLength))
-                        phraseList.Add(p);
+                    if (_stopWords.Contains(word))
+                    {
+                        string phrase = sb.ToString().Trim();
+
+                        if (!string.IsNullOrWhiteSpace(phrase)
+                            && IsAcceptable(phrase, minCharLength, maxWordsLength))
+                        {
+                            phraseList.Add(phrase);
+                        }
+
+                        sb.Clear();
+                    }
+                    else
+                    {
+                        sb.Append(word).Append(' ');
+                    }
                 }
+
+                string p2 = sb.ToString().Trim();
+
+                if (!string.IsNullOrWhiteSpace(p2)
+                    && IsAcceptable(p2, minCharLength, maxWordsLength))
+                {
+                    phraseList.Add(p2);
+                }
+
+                sb.Clear();
             }
 
             return phraseList;
@@ -210,9 +207,19 @@ namespace Rake
         {
             if (phrase.Length < minCharLength) return false;
 
-            var words = phrase.Split(' ');
+            var wordSplitter = new StringSplitter(phrase.AsSpan(), ' ');
 
-            if (words.Length > maxWordsLength) return false;
+            int wordCount = 0;
+
+            while (wordSplitter.TryGetNext(out _))
+            {
+                wordCount++;
+            }
+
+            if (wordCount > maxWordsLength)
+            {
+                return false;
+            }
 
             var digits = 0;
             var alpha = 0;
